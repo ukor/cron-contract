@@ -12,7 +12,7 @@ pragma solidity ^0.8.1;
     Only the smart contract creator has priviliage to send ETH out.
 */
 
-contract ClockBox {
+contract CronContract {
 
     // locks sending ether out of contract(vault) to this admin addreess
     address public admin;
