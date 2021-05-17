@@ -1,6 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-./node_modules/.bin/solhint contracts/**/*.sol --fix
-./node_modules/eslint/bin/eslint.js --fix
-./node_modules/pretty-quick/bin/pretty-quick.js --staged
+npm test
+npm run solhint:fix
+npm run eslint:fix
+npm run prettier:fix
