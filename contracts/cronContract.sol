@@ -128,7 +128,7 @@ contract CronContract {
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, 'Only admin can withdraw from valut');
+        require(msg.sender == admin, 'Only admin can withdraw');
 
         _;
     }
