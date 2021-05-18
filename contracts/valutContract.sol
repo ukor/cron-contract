@@ -167,15 +167,15 @@ contract CronToken {
     ## Overview
 
     Accept ETH from users, deduct 0.25% from the value sent
-    store the new amount in the smart contract (valut).
-    It emits an event for every new storage to the valut
+    store the new amount in the smart contract (vault).
+    It emits an event for every new storage to the vault
     When the lock time elapses, the stored value is sent to the intended recipient
 
     The smart contract is uses an owner priviliage to prevent anyone from sending ETH out.
     Only the smart contract creator has priviliage to send ETH out.
 */
 
-contract ValutContract {
+contract VaultContract {
     // locks sending ether out of contract(vault) to this owner addreess
     address public owner;
 
@@ -255,8 +255,8 @@ contract ValutContract {
         return _lockedBalances[msg.sender];
     }
 
-    /// Returns balance in the valut after fee has been deducted
-    function balanceOfValut() external view returns (uint256) {
+    /// Returns balance in the vault after fee has been deducted
+    function balanceOfvault() external view returns (uint256) {
         return address(this).balance;
     }
 
@@ -271,16 +271,16 @@ contract ValutContract {
         return keepers[_hash];
     }
 
-    /// withdraw from the valut. Restricted to onlyOwner
+    /// withdraw from the vault. Restricted to onlyOwner
     function withdraw(bytes32 _hash) external onlyOwner {
         address payable recipient = payable(keepers[_hash].recipient);
         uint256 value = keepers[_hash].value;
 
-        _withdrawFromValut(recipient, value);
+        _withdrawFromvault(recipient, value);
     }
 
     // transfer ether from this smart contract to recipient
-    function _withdrawFromValut(address payable _recipient, uint256 _value) internal {
+    function _withdrawFromvault(address payable _recipient, uint256 _value) internal {
         _recipient.transfer(_value);
     }
 
