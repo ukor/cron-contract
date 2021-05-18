@@ -9,13 +9,13 @@ pragma solidity ^0.8.1;
     It emits an event for every new storage to the valut
     When the lock time elapses, the stored value is sent to the intended recipient
 
-    The smart contract is uses an admin priviliage to prevent anyone from sending ETH out.
+    The smart contract is uses an owner priviliage to prevent anyone from sending ETH out.
     Only the smart contract creator has priviliage to send ETH out.
 */
 
-contract CronContract {
-    // locks sending ether out of contract(vault) to this admin addreess
-    address public admin;
+contract ValutContract {
+    // locks sending ether out of contract(vault) to this owner addreess
+    address public owner;
 
     uint256 internal feePercentage;
 
@@ -23,14 +23,14 @@ contract CronContract {
     address payable internal feeAddress;
 
     constructor(address _feeAddress) {
-        admin = msg.sender;
+        owner = msg.sender;
         // 0.25% of value stored in the contract
         feePercentage = 25;
         feeAddress = payable(_feeAddress);
     }
 
-    // balances of sender
-    mapping(address => uint256) internal balances;
+    // lockedBalances of sender
+    mapping(address => uint256) internal _lockedBalances;
 
     struct Keeper {
         address sender;
@@ -55,7 +55,7 @@ contract CronContract {
     function vault(address _recipient, uint256 _lockTime) external payable {
         uint256 fee = calculateFee(msg.value);
         uint256 value = deductFeeFromValue(msg.value);
-        balances[msg.sender] += value;
+        _lockedBalances[msg.sender] += value;
 
         bytes32 hash = makeHash(msg.sender, _recipient, _lockTime);
 
@@ -90,7 +90,7 @@ contract CronContract {
 
     /// Returns sender balance
     function balanceOf() external view returns (uint256) {
-        return balances[msg.sender];
+        return _lockedBalances[msg.sender];
     }
 
     /// Returns balance in the valut after fee has been deducted
@@ -99,8 +99,8 @@ contract CronContract {
     }
 
     /// Returns  the balnce of the address fees are been paid to
-    /// restricted to onlyAdmin
-    function balanceOfFeeAddress() external view onlyAdmin returns (uint256) {
+    /// restricted to onlyOwner
+    function balanceOfFeeAddress() external view onlyOwner returns (uint256) {
         return address(feeAddress).balance;
     }
 
@@ -109,8 +109,8 @@ contract CronContract {
         return keepers[_hash];
     }
 
-    /// withdraw from the valut. Restricted to onlyAdmin
-    function withdraw(bytes32 _hash) external onlyAdmin {
+    /// withdraw from the valut. Restricted to onlyOwner
+    function withdraw(bytes32 _hash) external onlyOwner {
         address payable recipient = payable(keepers[_hash].recipient);
         uint256 value = keepers[_hash].value;
 
@@ -127,8 +127,8 @@ contract CronContract {
         _;
     }
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, 'Only admin can withdraw');
+    modifier onlyOwner() {
+        require(msg.sender == owner, 'Only owner can withdraw');
 
         _;
     }
