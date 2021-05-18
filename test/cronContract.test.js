@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
-describe('test cron contract', function () {
+describe('test valut contract', function () {
     let Token, token, owner, addr1, addr2;
 
     beforeEach(async () => {
