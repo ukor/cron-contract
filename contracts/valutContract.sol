@@ -123,7 +123,7 @@ contract CronToken {
         address sender,
         address recipient,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         require(sender != address(0), 'Transfering from zero address');
         require(recipient != address(0), 'Transfering to zero address');
 
