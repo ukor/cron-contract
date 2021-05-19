@@ -170,8 +170,10 @@ contract CronToken {
 
     Accept ETH from users, deduct 0.25% from the value sent
     store the new amount in the smart contract (vault).
-    It emits an event for every new storage to the vault
+    Emits a NewKeeper event for every new storage to the vault
     When the lock time elapses, the stored value is sent to the intended recipient
+    The withdraw function is called by the dapp and this is trigger by outside schecdular
+    A `Transfer` event is also emited after every withdrawal
 
     The smart contract is uses an owner priviliage to prevent anyone from sending ETH out.
     Only the smart contract creator has priviliage to send ETH out.
@@ -212,6 +214,8 @@ contract VaultContract {
         uint256 indexed lockUntill, // timestamp (millisecond)
         bytes32 hash
     );
+
+    event Transfer(address from, address to, uint256 value);
 
     mapping(bytes32 => Keeper) internal keepers;
 
@@ -274,16 +278,41 @@ contract VaultContract {
     }
 
     /// withdraw from the vault. Restricted to onlyOwner
-    function withdraw(bytes32 _hash) external onlyOwner {
-        address payable recipient = payable(keepers[_hash].recipient);
-        uint256 value = keepers[_hash].value;
+    function withdraw(bytes32 _hash) external onlyOwner returns (bool) {
+        _withdrawFromvault(_hash);
 
-        _withdrawFromvault(recipient, value);
+        return true;
     }
 
     // transfer ether from this smart contract to recipient
-    function _withdrawFromvault(address payable _recipient, uint256 _value) internal {
-        _recipient.transfer(_value);
+    function _withdrawFromvault(bytes32 _hash) internal returns (bool) {
+        address to = keepers[_hash].recipient;
+        address payable recipient = payable(to);
+        address from = keepers[_hash].sender;
+        uint256 value = keepers[_hash].value;
+
+        // delete the record from valut - prevent double withdrawal(spending)
+        delete keepers[_hash];
+        /// @Review: should the record be deleted or should a field be updated that it has been withdrawn??
+
+        // transfer the value to the recipient
+        recipient.transfer(value);
+
+        emit Transfer(from, to, value);
+
+        return true;
+    }
+
+    // @REVIEW: use to transfer all stored value from vault to a new smart contract
+    // To called when upgrading the smart contract
+    function clearVault(address recipient) external onlyOwner returns (bool) {
+        // @TODO:  -  review
+        uint256 value = address(this).balance;
+        payable(recipient).transfer(value);
+
+        emit Transfer(msg.sender, recipient, value);
+
+        return true;
     }
 
     modifier largerThen10000wie(uint256 _value) {
