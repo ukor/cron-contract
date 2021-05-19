@@ -10,6 +10,7 @@ contract CronToken {
 
     string private _name;
     string private _symbol;
+    uint8 private _decimals;
 
     address public admin;
 
@@ -18,8 +19,9 @@ contract CronToken {
     event Approval(address from, address recipient, uint256 amount);
 
     constructor(address _admin) {
-        _name = 'Cron';
-        _symbol = 'CRON';
+        _name = "Cron";
+        _symbol = "CRON";
+        _decimals = 16;
         admin = _admin;
         mint(100000000 * 10**decimals());
     }
@@ -32,8 +34,8 @@ contract CronToken {
         return _symbol;
     }
 
-    function decimals() public pure returns (uint8) {
-        return 16;
+    function decimals() public view returns (uint8) {
+        return _decimals;
     }
 
     function totalSupply() public view returns (uint256) {
@@ -72,7 +74,7 @@ contract CronToken {
         _transfer(sender, recipient, amount);
 
         uint256 currentAllowance = _allowances[sender][msg.sender];
-        require(currentAllowance >= amount, 'Amount exceeds allowance');
+        require(currentAllowance >= amount, "Amount exceeds allowance");
         _approve(sender, msg.sender, currentAllowance - amount);
 
         return true;
@@ -100,7 +102,7 @@ contract CronToken {
 
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
         uint256 currentAllowance = _allowances[msg.sender][spender];
-        require(currentAllowance >= subtractedValue, 'Decreased allowance below zero');
+        require(currentAllowance >= subtractedValue, "Decreased allowance below zero");
         _approve(msg.sender, spender, currentAllowance - subtractedValue);
 
         return true;
@@ -112,8 +114,8 @@ contract CronToken {
         address spender,
         uint256 amount
     ) internal {
-        require(_owner != address(0), 'Approve from zero address');
-        require(spender != address(0), 'Approve to zero address');
+        require(_owner != address(0), "Approve from zero address");
+        require(spender != address(0), "Approve to zero address");
 
         _allowances[_owner][spender] = amount;
         emit Approval(_owner, spender, amount);
@@ -124,11 +126,11 @@ contract CronToken {
         address recipient,
         uint256 amount
     ) internal {
-        require(sender != address(0), 'Transfering from zero address');
-        require(recipient != address(0), 'Transfering to zero address');
+        require(sender != address(0), "Transfering from zero address");
+        require(recipient != address(0), "Transfering to zero address");
 
         uint256 senderBalance = _balances[sender];
-        require(senderBalance >= amount, 'Insuffiencet balance');
+        require(senderBalance >= amount, "Insuffiencet balance");
         _balances[sender] = senderBalance - amount;
         _balances[recipient] += amount;
 
@@ -137,7 +139,7 @@ contract CronToken {
 
     /// create new tokens and emit event from the zero address
     function _mint(address account, uint256 amount) internal {
-        require(account != address(0), 'Mint to the zero address');
+        require(account != address(0), "Mint to the zero address");
 
         _totalSupply += amount;
         _balances[account] += amount;
@@ -146,10 +148,10 @@ contract CronToken {
 
     /// Destroy tokens - Send amount
     function _burn(address account, uint256 amount) internal {
-        require(account != address(0), 'Burn from the zero address');
+        require(account != address(0), "Burn from the zero address");
 
         uint256 accountBalance = _balances[account];
-        require(accountBalance >= amount, 'Burn amount exceeds balance');
+        require(accountBalance >= amount, "Burn amount exceeds balance");
         _balances[account] = accountBalance - amount;
         _totalSupply -= amount;
 
@@ -157,7 +159,7 @@ contract CronToken {
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, 'Only owner can perform this operation');
+        require(msg.sender == admin, "Only owner can perform this operation");
 
         _;
     }
@@ -285,12 +287,12 @@ contract VaultContract {
     }
 
     modifier largerThen10000wie(uint256 _value) {
-        require((_value / 10000) * 10000 == _value, 'Amount is too low.');
+        require((_value / 10000) * 10000 == _value, "Amount is too low.");
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, 'Only owner can withdraw');
+        require(msg.sender == owner, "Only owner can withdraw");
 
         _;
     }
