@@ -10,6 +10,7 @@ contract CronToken {
 
     string private _name;
     string private _symbol;
+    uint8 private _decimals;
 
     address public admin;
 
@@ -20,6 +21,7 @@ contract CronToken {
     constructor(address _admin) {
         _name = 'Cron';
         _symbol = 'CRON';
+        _decimals = 16;
         admin = _admin;
         mint(100000000 * 10**decimals());
     }
@@ -32,8 +34,8 @@ contract CronToken {
         return _symbol;
     }
 
-    function decimals() public pure returns (uint8) {
-        return 16;
+    function decimals() public view returns (uint8) {
+        return _decimals;
     }
 
     function totalSupply() public view returns (uint256) {
