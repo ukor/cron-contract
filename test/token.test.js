@@ -1,22 +1,22 @@
-const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
-describe('Test token contract', function () {
+describe("Test token contract", function () {
     let Token, token, admin, addr1, addr2;
 
     beforeEach(async () => {
         [admin, addr1, addr2, _] = await ethers.getSigners();
-        Token = await ethers.getContractFactory('CronToken');
+        Token = await ethers.getContractFactory("CronToken");
         token = await Token.deploy(admin.address);
         await token.deployed();
     });
 
-    describe('Deployment', () => {
-        it('Should set the right owner', async () => {
+    describe("Deployment", () => {
+        it("Should set the right owner", async () => {
             expect(await token.admin()).to.equal(admin.address);
         });
 
-        it('Should transfer tokens between account', async () => {
+        it("Should transfer tokens between account", async () => {
             await token.transfer(addr1.address, 50);
             const addr1Balance = await token.balanceOf(addr1.address);
             expect(addr1Balance).to.equal(50);
@@ -29,12 +29,12 @@ describe('Test token contract', function () {
         it("Should fail if sender doesn't have enough tokens", async () => {
             const initialAdminBalance = await token.balanceOf(admin.address);
 
-            await expect(token.connect(addr1).transfer(admin.address, 1)).to.be.revertedWith('Insuffiencet balance');
+            await expect(token.connect(addr1).transfer(admin.address, 1)).to.be.revertedWith("Insuffiencet balance");
 
             expect(await token.balanceOf(admin.address)).to.equal(initialAdminBalance);
         });
 
-        it('Should update balance after transfers', async () => {
+        it("Should update balance after transfers", async () => {
             const initialAdminBalance = await token.balanceOf(admin.address);
 
             await token.transfer(addr1.address, 1000);
