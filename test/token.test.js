@@ -5,9 +5,9 @@ describe("Test token contract", function () {
     let Token, token, admin, addr1, addr2;
 
     beforeEach(async () => {
-        [admin, addr1, addr2, _] = await ethers.getSigners();
+        [admin, addr1, addr2, fee] = await ethers.getSigners();
         Token = await ethers.getContractFactory("CronToken");
-        token = await Token.deploy(admin.address);
+        token = await Token.deploy(admin.address, fee.address);
         await token.deployed();
     });
 

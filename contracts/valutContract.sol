@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2021-06-03
+ */
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.1;
 
@@ -5,6 +9,16 @@ contract CronToken {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
+
+    // lockedBalances of sender
+    mapping(address => uint256) internal _lockedBalances;
+
+    mapping(bytes32 => Keeper) internal keepers;
+
+    uint256 internal feePercentage;
+
+    // address to pay fee to
+    address payable internal feeAddress;
 
     uint256 private _totalSupply;
 
@@ -14,16 +28,37 @@ contract CronToken {
 
     address public admin;
 
+    struct Keeper {
+        address sender;
+        uint256 value;
+        address recipient;
+        uint256 dateLocked;
+        uint256 lockUntill;
+    }
+
+    event NewKeeper(
+        address indexed sender,
+        uint256 value,
+        address indexed recipient,
+        uint256 dateLocked, // block.timestamp
+        uint256 indexed lockUntill, // timestamp (millisecond)
+        bytes32 hash
+    );
+
     event Transfer(address from, address to, uint256 value);
 
     event Approval(address from, address recipient, uint256 amount);
 
-    constructor(address _admin) {
+    constructor(address _admin, address _feeAddress) {
         _name = "Cron";
         _symbol = "CRON";
         _decimals = 16;
         admin = _admin;
         mint(100000000 * 10**decimals());
+
+        // 0.25% of value stored in the contract
+        feePercentage = 25;
+        feeAddress = payable(_feeAddress);
     }
 
     function name() public view returns (string memory) {
@@ -158,66 +193,19 @@ contract CronToken {
         emit Transfer(account, address(0), amount);
     }
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only owner can perform this operation");
+    /*
+        ## Overview
 
-        _;
-    }
-}
+        Accept ETH from users, deduct 0.25% from the value sent
+        store the new amount in the smart contract (vault).
+        Emits a NewKeeper event for every new storage to the vault
+        When the lock time elapses, the stored value is sent to the intended recipient
+        The withdraw function is called by the dapp and this is trigger by outside schecdular
+        A `Transfer` event is also emited after every withdrawal
 
-/*
-    ## Overview
-
-    Accept ETH from users, deduct 0.25% from the value sent
-    store the new amount in the smart contract (vault).
-    Emits a NewKeeper event for every new storage to the vault
-    When the lock time elapses, the stored value is sent to the intended recipient
-    The withdraw function is called by the dapp and this is trigger by outside schecdular
-    A `Transfer` event is also emited after every withdrawal
-
-    The smart contract is uses an owner priviliage to prevent anyone from sending ETH out.
-    Only the smart contract creator has priviliage to send ETH out.
-*/
-
-contract VaultContract {
-    // locks sending ether out of contract(vault) to this owner addreess
-    address public owner;
-
-    uint256 internal feePercentage;
-
-    // address to pay fee to
-    address payable internal feeAddress;
-
-    constructor(address _feeAddress) {
-        owner = msg.sender;
-        // 0.25% of value stored in the contract
-        feePercentage = 25;
-        feeAddress = payable(_feeAddress);
-    }
-
-    // lockedBalances of sender
-    mapping(address => uint256) internal _lockedBalances;
-
-    struct Keeper {
-        address sender;
-        uint256 value;
-        address recipient;
-        uint256 dateLocked;
-        uint256 lockUntill;
-    }
-
-    event NewKeeper(
-        address indexed sender,
-        uint256 value,
-        address indexed recipient,
-        uint256 dateLocked, // block.timestamp
-        uint256 indexed lockUntill, // timestamp (millisecond)
-        bytes32 hash
-    );
-
-    event Transfer(address from, address to, uint256 value);
-
-    mapping(bytes32 => Keeper) internal keepers;
+        The smart contract is uses an owner priviliage to prevent anyone from sending ETH out.
+        Only the smart contract creator has priviliage to send ETH out.
+    */
 
     // recieves ether from recipient
     function vault(address _recipient, uint256 _lockTime) external payable {
@@ -256,8 +244,8 @@ contract VaultContract {
         return hash;
     }
 
-    /// Returns sender balance
-    function balanceOf() external view returns (uint256) {
+    /// Returns sender locked balance
+    function balanceOfInValut() external view returns (uint256) {
         return _lockedBalances[msg.sender];
     }
 
@@ -268,7 +256,7 @@ contract VaultContract {
 
     /// Returns  the balnce of the address fees are been paid to
     /// restricted to onlyOwner
-    function balanceOfFeeAddress() external view onlyOwner returns (uint256) {
+    function balanceOfFeeAddress() external view onlyAdmin returns (uint256) {
         return address(feeAddress).balance;
     }
 
@@ -278,7 +266,7 @@ contract VaultContract {
     }
 
     /// withdraw from the vault. Restricted to onlyOwner
-    function withdraw(bytes32 _hash) external onlyOwner returns (bool) {
+    function withdraw(bytes32 _hash) external onlyAdmin returns (bool) {
         _withdrawFromvault(_hash);
 
         return true;
@@ -303,25 +291,13 @@ contract VaultContract {
         return true;
     }
 
-    // @REVIEW: use to transfer all stored value from vault to a new smart contract
-    // To called when upgrading the smart contract
-    function clearVault(address recipient) external onlyOwner returns (bool) {
-        // @TODO:  -  review
-        uint256 value = address(this).balance;
-        payable(recipient).transfer(value);
-
-        emit Transfer(msg.sender, recipient, value);
-
-        return true;
-    }
-
     modifier largerThen10000wie(uint256 _value) {
         require((_value / 10000) * 10000 == _value, "Amount is too low.");
         _;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can withdraw");
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only owner can perform this operation");
 
         _;
     }
